@@ -24,11 +24,11 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t my-docker-image:latest .
+          docker build -t modelrunner:latest .
 
       - name: Test Docker Login
         run: |
-          docker run --rm my-docker-image:latest bash -c "echo Login successful for testing purposes"
+          docker run --rm modelrunner:latest bash -c "echo Login successful for testing purposes"
 
   # Commit to the main branch
   commit_to_main:
@@ -71,8 +71,8 @@ jobs:
 
       - name: Retest Docker image for deployment
         run: |
-          docker pull my-docker-image:latest
-          docker run --rm my-docker-image:latest bash -c "echo Retest successful"
+          docker pull modelrunner:latest
+          docker run --rm modelrunner:latest bash -c "echo Retest successful"
 
   # Deploy to EC2
   deploy_to_ec2:
@@ -86,11 +86,11 @@ jobs:
 
       - name: Copy application to EC2
         run: |
-          scp -o StrictHostKeyChecking=no -r ./my-docker-image.tar ubuntu@your-ec2-instance-ip:/home/ubuntu/
+          scp -o StrictHostKeyChecking=no -r ./modelrunner.tar ubuntu@your-ec2-instance-ip:/home/ubuntu/
 
       - name: SSH into EC2 to deploy
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@your-ec2-instance-ip << 'EOF'
-            docker load -i my-docker-image.tar
-            docker run -d -p 80:80 my-docker-image:latest
+            docker load -i modelrunner.tar
+            docker run -d -p 80:80 modelrunner:latest
           EOF

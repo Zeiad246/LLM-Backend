@@ -23,8 +23,7 @@ class ModelSingleton:
         self.model = AutoModelForCausalLM.from_pretrained(model_path).to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model.eval()  # Set the model to evaluation mode
-        self.tokenizer.pad_token = self.tokenizer.eos_token  # Optional if required by the model
-    
+        
     def generate_response(self, prompt, max_length=500):
         """Generate a response using the preloaded model."""
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -35,9 +34,11 @@ class ModelSingleton:
 
 # Utility function to extract data dynamically
 def extract_data(input_text):
+    print(input_text)
+
     try:
         # Extract the topic
-        topic_match = re.search(r"Topic:\s*(.*)", input_text, re.IGNORECASE)
+        topic_match = re.search(r"Topic:\s*(.*?)(?=and the Explanation:|$)", input_text, re.IGNORECASE)
         topic = topic_match.group(1).strip() if topic_match else "No topic found"
         
         # Extract the question
@@ -66,13 +67,13 @@ def extract_data(input_text):
 
 
 # Specify the model checkpoint path
-best_checkpoint_path = "/mnt/c/Users/zeiad/Downloads/Llama implementaion/output/checkpoint-3000"
+best_checkpoint_path = "/mnt/c/Users/zeiad/Downloads/LLM-Backend/checkpoint-3000"
 
 # Load the model once
 model_instance = ModelSingleton(best_checkpoint_path)
 
-@app.route('/recieve', methods=['GET'])
-def get_data():
+@app.route('/generate_response', methods=['POST'])
+def Generator():
     # Get the query parameters from the URL
     data = request.get_json()
     topic = data.get('topic')
@@ -83,27 +84,20 @@ def get_data():
     if not all([topic, explanation, answer]):
         return jsonify({"error": "Missing one or more required parameters: topic, explanation, answer."}), 400
 
-    # Process the data (for demonstration, just return the received data)
-    
     prompt =f"""<|im_start|> Based on the Topic: {topic} and the Explanation: {explanation}. Correct Answer: {answer}
                 Generate a question related to the explanation containing age and gender of patient as well as 4 multiple 
-                choice options without duplicating them and differet relevant diseases. The options should include the correct answer 
-                and generate the other 3 based on the standard terminology.<|im_end|>"""
+                choice options without duplicating them. Makes the choices similar with different related diseases. 
+                The options should include the correct answer and generate the other 3 based on the standard terminology.<|im_end|>"""
 
     
     generated_response = model_instance.generate_response(prompt)
-
-    return generated_response, 200
-
-@app.route("/generated_response", methods=["POST"])
-def generate():
-
-    # Generate response using the model
-    generated_response = get_data()
+    print(generated_response)
     MCQ_Object = extract_data(generated_response)
 
-    return MCQ_Object
+    return MCQ_Object, 200
+
+
 
 if __name__ == "__main__":
-    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=8080, debug=debug_mode)
+    # debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=8080, debug=True)
